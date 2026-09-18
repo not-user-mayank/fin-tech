@@ -92,10 +92,15 @@ def generate_dummy_transactions(n_rows=2000, n_merchants=20, seed=42):
     })
     return df
 
-# Load dummy data
-@st.cache_data
+# Load real data + Person B pipeline
+@st.cache_data(show_spinner=False)
 def load_data():
-    return generate_dummy_transactions()
+    df_real = pd.read_csv("data/transactions.csv", parse_dates=["timestamp"])
+    if detect_anomalies is not None:
+        df_real = detect_anomalies(df_real)
+    if compute_credit_score is not None:
+        df_real = compute_credit_score(df_real)
+    return df_real
 
 df = load_data()
 
@@ -106,6 +111,16 @@ selected_merchant = st.sidebar.selectbox("Select Merchant", merchants)
 
 # Filter to selected merchant
 dff = df[df["merchant_id"] == selected_merchant].copy()
+
+# Real score cards from Person B pipeline
+if not dff.empty:
+    m = dff.iloc[0]
+    credit_score = int(m.get("credit_score", 0)) if pd.notna(m.get("credit_score")) else 0
+    risk_band = str(m.get("risk_band", "unknown"))
+    loan_limit = int(m.get("loan_limit", 0)) if pd.notna(m.get("loan_limit")) else 0
+    weighted_sum = float(m.get("weighted_sum", 0)) if pd.notna(m.get("weighted_sum")) else 0
+    contrib = m.get("feature_contributions", {})
+    explanation = contrib.get("explanation", "Score computed from 7 sub-scores.") if isinstance(contrib, dict) else "Score computed from 7 sub-scores."
 
 if dff.empty:
     st.warning("No transactions for this merchant.")
