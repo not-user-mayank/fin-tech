@@ -127,18 +127,12 @@ if dff.empty:
     st.stop()
 
 # ---------- Aggregate score per merchant (dummy logic for now) ----------
-avg_score = dff["score"].mean()
 risk_band_mode = dff["risk_band"].mode()[0] if not dff["risk_band"].empty else "unknown"
 avg_loan_limit = dff["loan_limit"].mean()
 
-# --- Real module integration stubs ---
-if compute_credit_score is not None:
-    dff = compute_credit_score(dff)
-if detect_anomalies is not None:
-    dff = detect_anomalies(dff)
 
 # Anomaly summary
-anomaly_count = dff["has_anomaly"].sum() if "has_anomaly" in dff.columns else dff["is_flagged"].sum()
+anomaly_count = int(dff["has_anomaly"].sum()) if "has_anomaly" in dff.columns else int(dff["is_flagged"].sum()) if "is_flagged" in dff.columns else 0
 
 # ---------- Merchant Health Analysis ----------
 def analyze_merchant_health(merchant_df):
@@ -147,8 +141,8 @@ def analyze_merchant_health(merchant_df):
     
     # Calculate metrics
     total_txns = len(merchant_df)
-    flagged_txns = merchant_df[merchant_df["is_flagged"] == True]
-    anomaly_txns = merchant_df[merchant_df["has_anomaly"] == True]
+    flagged_txns = merchant_df[merchant_df["is_flagged"] == True] if "is_flagged" in merchant_df.columns else merchant_df.iloc[0:0]
+    anomaly_txns = merchant_df[merchant_df["has_anomaly"] == True] if "has_anomaly" in merchant_df.columns else merchant_df.iloc[0:0]
     
     # Amount statistics
     avg_amount = merchant_df["amount"].mean()
@@ -164,7 +158,7 @@ def analyze_merchant_health(merchant_df):
         merchant_df_sorted = merchant_df.sort_values("timestamp")
         # Detect peaks: days with highest anomaly count
         merchant_df_sorted["date"] = merchant_df_sorted["timestamp"].dt.date
-        daily_anomalies = merchant_df_sorted.groupby("date")["has_anomaly"].sum()
+        daily_anomalies = merchant_df_sorted.groupby("date")["has_anomaly"].sum() if "has_anomaly" in merchant_df_sorted.columns else merchant_df_sorted.groupby("date")["is_flagged"].sum() if "is_flagged" in merchant_df_sorted.columns else pd.Series(dtype=float)
         peak_dates = daily_anomalies[daily_anomalies > 0].nlargest(3)
         peak_info = []
         for date, count in peak_dates.items():
@@ -276,7 +270,7 @@ st.plotly_chart(fig_amount, width='stretch')
 
 # Scatter: amount vs score
 st.subheader("Amount vs Risk Score")
-fig_scatter = px.scatter(dff, x="score", y="amount", color="risk_band",
+fig_scatter = px.scatter(dff, x="credit_score", y="amount", color="risk_band",
                          title="Amount vs Risk Score by Band",
                          hover_data=["txn_id", "payer_id"])
 st.plotly_chart(fig_scatter, width='stretch')
