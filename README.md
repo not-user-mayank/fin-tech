@@ -53,4 +53,4 @@ Access at `http://localhost:8501`
 - ✅ Step 2 — Dashboard skeleton with dummy data
 - ✅ Step 3 — Login + merchant health analysis + anomaly peak detection
 - ✅ Merge — Person B backend (`anomaly.py`, `scoring.py`, `generate_data.py`, `data/`) integrated
-- ⏸ Project running; ready for Person B live module updates
+- ✅ Project is updated and working 
