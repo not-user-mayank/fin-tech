@@ -31,13 +31,12 @@ def login():
         return False
     return True
 
-# Check if user is logged in
-if not login():
-    st.stop()
+# Auth handled by tabs below; keep old guard non-blocking
+_ = login()  # legacy guard
 
 # ---------- Ready for Person B modules ----------
 try:
-    from anomaly import detect_anomalies
+    from anomaly import flag_transactions as detect_anomalies
 except ImportError:
     detect_anomalies = None
 
@@ -48,6 +47,51 @@ except ImportError:
 
 st.set_page_config(page_title="Fintech Risk Dashboard", layout="wide")
 st.title("Fintech Risk Dashboard")
+
+# ---------- Signup / Bank Details ----------
+if "user_profile" not in st.session_state:
+    st.session_state.user_profile = {}
+
+# Show signup/login tabs at top before anything else
+if not st.session_state.get("authenticated", False):
+    tab1, tab2 = st.tabs(["Login", "Sign Up"])
+    with tab1:
+        st.subheader("Login")
+        if st.button("Continue as Guest", type="primary"):
+            st.session_state.authenticated = True
+            st.session_state.username = "guest"
+            st.session_state.user_profile["name"] = "Guest User"
+            st.session_state.signup_done = True
+            st.rerun()
+    with tab2:
+        st.subheader("Sign Up (Dummy — any details accepted)")
+        name = st.text_input("Name", value=st.session_state.user_profile.get("name", ""))
+        email = st.text_input("Email", value=st.session_state.user_profile.get("email", ""))
+        mobile = st.text_input("Mobile", value=st.session_state.user_profile.get("mobile", ""))
+        if st.button("Complete Signup", type="primary"):
+            st.session_state.authenticated = True
+            st.session_state.username = email or name
+            st.session_state.user_profile.update({
+                "name": name,
+                "email": email,
+                "mobile": mobile,
+            })
+            st.session_state.signup_done = True
+            st.rerun()
+    st.stop()
+
+# After signup/login, collect bank + PAN details (dummy, optional)
+if st.session_state.get("signup_done", False):
+    with st.sidebar:
+        st.subheader("Bank & PAN Details (Dummy)")
+        bank = st.text_input("Bank Name", value=st.session_state.user_profile.get("bank", ""))
+        acct = st.text_input("Account No", value=st.session_state.user_profile.get("acct", ""))
+        ifsc = st.text_input("IFSC", value=st.session_state.user_profile.get("ifsc", ""))
+        pan = st.text_input("PAN", value=st.session_state.user_profile.get("pan", ""))
+        st.session_state.user_profile.update({"bank": bank, "acct": acct, "ifsc": ifsc, "pan": pan})
+        if bank and acct:
+            st.info("Profile saved.")
+
 
 # ---------- Dummy data generation (no external files yet) ----------
 def generate_dummy_transactions(n_rows=2000, n_merchants=20, seed=42):
@@ -283,12 +327,12 @@ st.plotly_chart(fig_band, width='stretch')
 
 # Flagged transactions table
 st.subheader("Flagged Transactions")
-flagged = dff[dff["is_flagged"] == True]
+flagged = dff[dff["is_flagged"] == True] if "is_flagged" in dff.columns else dff.iloc[0:0]
 if flagged.empty:
     st.info("No flagged transactions for this merchant.")
 else:
     st.dataframe(
-        flagged[["txn_id", "payer_id", "amount", "timestamp", "status", "flag_reason", "anomaly_score"]]
+        flagged[["txn_id", "payer_id", "amount", "timestamp", "status", "flag_reason"] + (["anomaly_score"] if "anomaly_score" in flagged.columns else [])]
     )
 
 # All transactions (optional, collapsible)
