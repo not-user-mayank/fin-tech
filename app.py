@@ -136,6 +136,194 @@ def generate_dummy_transactions(n_rows=2000, n_merchants=20, seed=42):
     })
     return df
 
+# Theme mode toggle (light/dark)
+if "light_mode" not in st.session_state:
+    st.session_state.light_mode = False
+
+# Theme toggle in sidebar (before filters if needed)
+with st.sidebar:
+    st.toggle("Light Mode", value=st.session_state.light_mode, key="light_toggle")
+    if "light_toggle" in st.session_state:
+        st.session_state.light_mode = st.session_state.light_toggle
+
+# Dynamic color variables
+if st.session_state.light_mode:
+    bg_color = "#f8f9fa"
+    text_color = "#212529"
+    sidebar_bg = "#ffffff"
+    card_bg = "#ffffff"
+    header_bg = "#e3f2fd"
+else:
+    bg_color = "#111111"
+    text_color = "#ffffff"
+    sidebar_bg = "#1a1a2e"
+    card_bg = "#0e0e24"
+    header_bg = "#1e1e2f"
+
+# Inject theme CSS + premium styling
+st.markdown(
+    f"""<style>
+    /* base */
+    [data-testid="stAppViewContainer"] {{
+        background-color: {bg_color} !important;
+        color: {text_color} !important;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+    }}
+    [data-testid="stSidebar"] {{
+        background-color: {sidebar_bg} !important;
+        color: {text_color} !important;
+    }}
+    .stCard, .stExpander, .stInfo, .stSuccess, .stWarning, .stError {{
+        background-color: {card_bg} !important;
+        color: {text_color} !important;
+        border-radius: 12px !important;
+        border: 1px solid {'#dee2e6' if st.session_state.light_mode else '#333'} !important;
+    }}
+    .stHeader header, .stTitle, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {{
+        color: {text_color} !important;
+    }}
+
+    /* hero title */
+    .hero-title {{
+        font-size: 2.4rem;
+        font-weight: 800;
+        color: {text_color};
+        margin-bottom: 0;
+        letter-spacing: -0.02em;
+    }}
+    .hero-sub {{
+        color: {text_color};
+        font-size: 1rem;
+        opacity: 0.75;
+        margin-top: -8px;
+        margin-bottom: 24px;
+    }}
+
+    /* score cards */
+    .score-card {{
+        border-radius: 16px !important;
+        padding: 20px 16px !important;
+        text-align: center;
+        color: #fff !important;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.18) !important;
+        transition: transform 0.2s;
+    }}
+    .score-card:hover {{
+        transform: translateY(-4px) !important;
+    }}
+    .score-label {{
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        opacity: 0.9;
+    }}
+    .score-value {{
+        font-size: 2.4rem;
+        font-weight: 800;
+        line-height: 1.15;
+    }}
+    .score-band {{
+        display: inline-block;
+        margin-top: 6px;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }}
+    .band-low      {{ background: linear-gradient(135deg,#00c853,#00e676); color:#000; }}
+    .band-moderate {{ background: linear-gradient(135deg,#ffd600,#ffea00); color:#000; }}
+    .band-high     {{ background: linear-gradient(135deg,#ff6d00,#ff9100); color:#000; }}
+    .band-decline  {{ background: linear-gradient(135deg,#d50000,#ff1744); color:#fff; }}
+
+    /* KPI row */
+    .kpi {{
+        flex: 1 1 140px;
+        background: {card_bg};
+        border: 1px solid {'#dee2e6' if st.session_state.light_mode else '#333'};
+        border-radius: 14px;
+        padding: 14px 18px;
+        text-align: center;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+    }}
+    .kpi-label {{ font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.8px; }}
+    .kpi-value {{ font-size: 1.6rem; font-weight: 700; color: {text_color}; }}
+
+    /* upload box */
+    .upload-box {{
+        border: 2px dashed {'#ced4da' if st.session_state.light_mode else '#555'};
+        border-radius: 16px;
+        padding: 28px;
+        text-align: center;
+        background: {sidebar_bg};
+        margin-bottom: 20px;
+    }}
+
+    /* explanation */
+    .expl-box {{
+        background: {sidebar_bg};
+        border-left: 4px solid #667eea;
+        border-radius: 8px;
+        padding: 14px 18px;
+        margin-top: 12px;
+        color: {text_color};
+    }}
+
+    /* chart wrap */
+    .chart-wrap {{
+        background: {card_bg};
+        border-radius: 14px;
+        padding: 16px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+        margin-bottom: 20px;
+    }}
+
+    /* section heading */
+    .section-heading {{
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+        color: {text_color};
+        border-bottom: 2px solid {'#dee2e6' if st.session_state.light_mode else '#444'};
+        padding-bottom: 6px;
+    }}
+
+    /* animation */
+    @keyframes fadeIn {{
+        from {{ opacity: 0; transform: translateY(12px); }}
+        to   {{ opacity: 1; transform: translateY(0); }}
+    }}
+    .fade-in {{
+        animation: fadeIn 0.5s ease-out both;
+    }}
+
+    /* buttons */
+    .stButton>button, .stButton>button:hover {{
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: #fff !important;
+        border-radius: 8px !important;
+        border: none !important;
+        font-weight: 600 !important;
+        padding: 0.4rem 1.2rem !important;
+        box-shadow: 0 2px 8px rgba(102,126,234,0.35) !important;
+        transition: all 0.15s ease !important;
+    }}
+    .stButton>button:hover {{
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(102,126,234,0.45) !important;
+    }}
+
+    /* scrollbar */
+    ::-webkit-scrollbar {{ width: 8px; }}
+    ::-webkit-scrollbar-track {{ background: {bg_color}; }}
+    ::-webkit-scrollbar-thumb {{ background: #667eea; border-radius: 4px; }}
+    </style>""",
+    unsafe_allow_html=True,
+)
+
+# store mode for use below
+light_mode = st.session_state.light_mode
+
 # Load real data + Person B pipeline
 @st.cache_data(show_spinner=False)
 def load_data():
@@ -147,6 +335,26 @@ def load_data():
     return df_real
 
 df = load_data()
+
+# ---------- Score a new merchant from raw data (CSV upload) ----------
+st.subheader("Score a New Merchant (Raw Data)")
+uploaded = st.file_uploader("Upload merchant transaction CSV", type="csv")
+if uploaded is not None:
+    try:
+        raw_df = pd.read_csv(uploaded, parse_dates=["timestamp"])
+        if compute_credit_score is not None:
+            raw_scored = compute_credit_score(raw_df)
+            st.success(f"Scored {raw_scored['merchant_id'].nunique()} merchant(s) from {len(raw_scored)} transactions")
+            raw_summary = raw_scored[["merchant_id", "credit_score", "risk_band", "loan_limit", "weighted_sum"]].drop_duplicates()
+            st.dataframe(raw_summary, use_container_width=True)
+            m = raw_scored.iloc[0]
+            contrib = m.get("feature_contributions", {})
+            if isinstance(contrib, dict) and "explanation" in contrib:
+                st.info("Why this score: " + contrib["explanation"])
+        else:
+            st.warning("scoring.py not available.")
+    except Exception as e:
+        st.error(f"Could not score this file. Expected columns: txn_id, merchant_id, payer_id, amount, timestamp, status. Error: {e}")
 
 # ---------- Sidebar: merchant selection ----------
 st.sidebar.header("Filters")
